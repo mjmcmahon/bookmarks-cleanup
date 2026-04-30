@@ -2,19 +2,10 @@
 // Calls onResult for each, onProgress (done, total) after each result.
 // Pass an AbortSignal to cancel.
 
-function getToken() {
-  const meta = document.querySelector('meta[name="bookmarks-token"]');
-  return meta?.getAttribute('content') || '';
-}
-
 export async function checkLinks({ urls, onResult, onProgress, signal }) {
-  const headers = { 'content-type': 'application/json' };
-  const token = getToken();
-  if (token) headers['x-bookmarks-cleanup-token'] = token;
-
   const response = await fetch('/api/check-links', {
     method: 'POST',
-    headers,
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ urls }),
     signal,
   });

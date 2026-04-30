@@ -343,14 +343,7 @@ function linkCheckErrorMessage(err, label = 'Link check') {
   if (err instanceof TypeError) {
     return "Couldn't reach the server. Is it running?";
   }
-  const msg = err?.message || String(err);
-  if (/401/.test(msg)) {
-    return 'Server rejected the token. Check the bookmarks-token meta tag.';
-  }
-  if (/503/.test(msg)) {
-    return 'Server has no token configured. Set BOOKMARKS_TOKEN.';
-  }
-  return `${label} failed: ${msg}`;
+  return `${label} failed: ${err?.message || err}`;
 }
 
 function labelFor(status) {

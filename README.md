@@ -28,19 +28,6 @@ npm install -g wrangler
 
 Then open the URL Wrangler prints (typically <http://127.0.0.1:8788>).
 
-### Local secret
-
-The link-check endpoint requires a shared token to keep the public deployment
-from being abused. For local dev, drop a value into `.dev.vars` (gitignored):
-
-```
-BOOKMARKS_TOKEN=local-dev-token
-```
-
-The frontend reads its token from a `<meta name="bookmarks-token">` tag in
-`public/index.html`. Match the two for local dev. See "Deployment" for the
-production setup.
-
 ## Deployment
 
 This repo deploys to Cloudflare Pages via the Git integration: pushing to
@@ -50,37 +37,26 @@ preview deployments.
 The custom domain (`bookmarks.brightsite.digital`) is mapped in the
 Cloudflare dashboard, not in code.
 
-### Production secret
+### Abuse prevention
 
-`BOOKMARKS_TOKEN` lives in the Cloudflare dashboard:
+The endpoint is open — no app-level auth. Layered controls instead:
 
-> Project → **Settings** → **Environment variables** → Production →
-> add `BOOKMARKS_TOKEN`
-
-Set the same value (or a different production-only one) in
-`public/index.html`'s `<meta name="bookmarks-token">` content attribute. Ship
-that change with the deploy. The token is visible in page source — this is
-casual abuse prevention, not real security.
+- **Hard cap of 2000 URLs per request** (enforced in the Function).
+- **Cloudflare Rate Limiting** on `/api/check-links` (configured in the
+  dashboard, not in code).
+- **Cloudflare Access** on `/api/*` if you ever need real gating — free on
+  the Workers Paid plan, one-tap email policy.
 
 ### Endpoint behaviour
 
-`POST /api/check-links`
-
-| Header | |
-| --- | --- |
-| `X-Bookmarks-Cleanup-Token` | must match `env.BOOKMARKS_TOKEN` |
-| `Content-Type` | `application/json` |
-
-Body: `{ "urls": string[] }`, 1..2000 entries. Response is
-`application/x-ndjson` — one `{url, status, code, reason}` per line, written
-as each probe completes.
+`POST /api/check-links` — body `{ "urls": string[] }`, 1..2000 entries.
+Response is `application/x-ndjson` — one `{url, status, code, reason}` per
+line, written as each probe completes.
 
 | Status | Meaning |
 | --- | --- |
 | `200` | streaming NDJSON |
 | `400` | bad body / too many URLs |
-| `401` | bad / missing token |
-| `503` | server has no `BOOKMARKS_TOKEN` configured |
 
 ## How to use
 

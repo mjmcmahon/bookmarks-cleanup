@@ -5,8 +5,11 @@
 // + undici backend used during local Fastify development.
 //
 // Request:  { urls: string[] }    (1..2000)
-// Headers:  X-Bookmarks-Cleanup-Token: <env.BOOKMARKS_TOKEN>
 // Response: application/x-ndjson; one {url, status, code, reason}\n per line.
+//
+// Abuse prevention is layered: hard cap of 2000 URLs per request (here),
+// Cloudflare rate limiting on the route (configured in the dashboard), and
+// optional Cloudflare Access if real auth is ever needed. No app-level token.
 //
 // Classification (must match the original backend):
 //   dead   — HTTP 404 / 410, DNS failure, connection refused
@@ -21,22 +24,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const CONCURRENCY = 20;
 const MAX_URLS = 2000;
 
-export async function onRequestPost({ request, env }) {
-  // Token has to be configured server-side. Distinguishes "server not set up"
-  // (503) from "client sent the wrong token" (401) so a missing-secret deploy
-  // doesn't read as an auth bug.
-  if (!env.BOOKMARKS_TOKEN) {
-    return jsonError(
-      503,
-      'not_configured',
-      'Server is missing BOOKMARKS_TOKEN. Set it in the Cloudflare dashboard or .dev.vars.'
-    );
-  }
-  const token = request.headers.get('x-bookmarks-cleanup-token');
-  if (token !== env.BOOKMARKS_TOKEN) {
-    return jsonError(401, 'unauthorized', 'Missing or invalid token.');
-  }
-
+export async function onRequestPost({ request }) {
   let body;
   try {
     body = await request.json();
