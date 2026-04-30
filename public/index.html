@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bookmarks Cleanup — BrightSite</title>
+    <!--
+      Token sent with every /api/check-links request. Must match
+      env.BOOKMARKS_TOKEN in the deployed Pages Function (Cloudflare dashboard
+      → Settings → Environment variables) or in .dev.vars locally.
+      This is casual abuse prevention, not real security — the token is
+      visible in page source.
+    -->
+    <meta name="bookmarks-token" content="local-dev-token" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css?v=10" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand-mark" href="/" aria-label="BrightSite">
+          <img src="/brand/brightsite-wordmark-cream.svg" alt="BrightSite" />
+        </a>
+        <span class="site-header__divider" aria-hidden="true"></span>
+        <div class="site-header__titles">
+          <h1>Bookmarks cleanup</h1>
+          <p class="subtitle">
+            Drop in a browser bookmarks export, prune, export back.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- Initial state: intro notes + drop zone -->
+      <section id="drop-state" class="drop-state">
+        <article class="notes">
+          <div class="notes__col">
+            <h2 class="notes__heading">How this works</h2>
+            <ol class="notes__steps">
+              <li>
+                <strong>Export from your browser.</strong>
+                See "How do I export my bookmarks?" below if you're not sure
+                where the option lives.
+              </li>
+              <li>
+                <strong>Drop the file in below.</strong>
+                It's parsed in your browser — nothing's sent anywhere yet.
+              </li>
+              <li>
+                <strong>Filter, search, and prune.</strong>
+                Narrow by folder, age, or title. Tick rows and delete in bulk.
+                Undo covers your last 20 deletions.
+              </li>
+              <li>
+                <strong>Check links</strong> (optional).
+                The server pings every URL and flags dead ones so you can
+                bulk-drop them in one click.
+              </li>
+              <li>
+                <strong>Export bookmarks HTML.</strong>
+                Download the cleaned file and re-import it in your browser's
+                bookmark manager.
+              </li>
+            </ol>
+            <p class="notes__footnote">
+              Edits live in this tab until you export. A refresh wipes them.
+            </p>
+          </div>
+
+          <div class="notes__col">
+            <h2 class="notes__heading">About the link check</h2>
+            <p>
+              Browsers can't reach most third-party sites directly because of
+              CORS, so the check runs on the server. Only the URLs are sent —
+              never titles, folder names, or anything else.
+            </p>
+            <ul class="notes__legend">
+              <li>
+                <span class="notes__dot notes__dot--alive" aria-hidden="true"></span>
+                <span><strong>Alive</strong> — anything responsive, including 403 and 5xx (often bot blocking, not a real death).</span>
+              </li>
+              <li>
+                <span class="notes__dot notes__dot--dead" aria-hidden="true"></span>
+                <span><strong>Dead</strong> — HTTP 404 or 410, DNS failure, or connection refused. Safe to bulk-drop.</span>
+              </li>
+              <li>
+                <span class="notes__dot notes__dot--error" aria-hidden="true"></span>
+                <span><strong>Error</strong> — timeouts or SSL oddities. Flagged in yellow, never bulk-deleted — you review these manually.</span>
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <details class="export-help">
+          <summary>How do I export my bookmarks?</summary>
+          <ul>
+            <li>
+              <strong>Chrome / Edge / Brave / Opera / Vivaldi / Arc:</strong>
+              ⋮ menu → Bookmarks → Bookmark Manager → ⋮ → Export bookmarks
+            </li>
+            <li>
+              <strong>Firefox:</strong>
+              Library → Bookmarks → Manage Bookmarks → Import and Backup →
+              Export Bookmarks to HTML
+            </li>
+            <li>
+              <strong>DuckDuckGo:</strong>
+              Settings → Sync &amp; Backup → Export bookmarks
+            </li>
+          </ul>
+        </details>
+
+        <details class="export-help">
+          <summary>How do I clear existing bookmarks before re-import?</summary>
+          <p class="export-help__lead">
+            Importing the cleaned HTML <em>adds</em> bookmarks alongside what's
+            already in your browser — so without clearing first, every bookmark
+            you didn't delete here will be duplicated. Keep the export file
+            you just downloaded as your backup, then:
+          </p>
+          <ul>
+            <li>
+              <strong>Chrome / Edge / Brave / Opera / Vivaldi / Arc:</strong>
+              Bookmark Manager (Cmd/Ctrl + Shift + O) → click "Bookmarks bar"
+              in the sidebar → Cmd/Ctrl + A → Delete. Repeat for "Other
+              bookmarks" and "Mobile bookmarks".
+            </li>
+            <li>
+              <strong>Firefox:</strong>
+              Manage Bookmarks (Cmd/Ctrl + Shift + O) → click "Bookmarks
+              Toolbar", "Bookmarks Menu", or "Other Bookmarks" → Cmd/Ctrl + A
+              → Delete. Repeat for each section.
+            </li>
+            <li>
+              <strong>DuckDuckGo:</strong>
+              Settings → Bookmarks → delete folders or bookmarks individually
+              (no select-all).
+            </li>
+          </ul>
+          <p class="export-help__footnote">
+            Then re-import the cleaned HTML via the same Import menu in your
+            browser's bookmark manager.
+          </p>
+        </details>
+
+        <div
+          id="drop-zone"
+          class="drop-zone"
+          role="button"
+          tabindex="0"
+          aria-label="Drop your browser bookmarks export, or click to choose a file"
+        >
+          <div class="drop-zone__inner">
+            <p class="drop-zone__primary">Drop your browser bookmarks export here</p>
+            <p class="drop-zone__secondary">or click to choose a file</p>
+            <p class="drop-zone__supported">
+              Works with exports from Chrome, Firefox, Edge, Brave, Opera,
+              Vivaldi, Arc, and DuckDuckGo. Safari support coming later.
+            </p>
+          </div>
+          <input type="file" id="file-input" accept=".html,.htm,text/html" hidden />
+        </div>
+
+        <p id="parse-error" class="parse-error" hidden></p>
+      </section>
+
+      <!-- After load: toolbar / stats / actions / table -->
+      <section id="table-state" class="table-state" hidden>
+        <div class="toolbar" role="search">
+          <div class="toolbar__field toolbar__field--grow">
+            <input
+              type="search"
+              id="filter-search"
+              class="toolbar__input"
+              placeholder="Search title or URL…"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Search title or URL"
+            />
+          </div>
+          <div class="toolbar__field">
+            <label class="toolbar__label" for="filter-folder">Folder</label>
+            <select id="filter-folder" class="toolbar__select"></select>
+          </div>
+          <div class="toolbar__field">
+            <label class="toolbar__label" for="filter-age">Age</label>
+            <select id="filter-age" class="toolbar__select"></select>
+          </div>
+          <div class="toolbar__field">
+            <label class="toolbar__label" for="filter-status">Status</label>
+            <select id="filter-status" class="toolbar__select"></select>
+          </div>
+          <a href="#" id="filter-reset" class="toolbar__reset" hidden>Clear filters</a>
+        </div>
+
+        <div class="stats-row">
+          <span class="stat">
+            Showing <strong id="stat-shown">0</strong> of
+            <strong id="stat-total">0</strong>
+          </span>
+          <span class="stat">
+            <strong id="stat-selected">0</strong> selected
+          </span>
+          <span class="stat" id="stat-original-wrap" hidden>
+            Original <strong id="stat-original">0</strong>
+          </span>
+        </div>
+
+        <!-- Action row -->
+        <div class="actions" id="actions-row" hidden>
+          <button id="check-links" type="button">Check links</button>
+          <button id="cancel-check" type="button" hidden>Cancel</button>
+          <span id="check-progress" class="actions__progress" hidden>
+            <span id="check-progress-text">Checking…</span>
+            <span class="progress-bar" aria-hidden="true">
+              <span id="check-progress-fill" class="progress-bar__fill"></span>
+            </span>
+          </span>
+          <button id="drop-dead" class="danger" type="button" hidden>
+            Drop all dead (0)
+          </button>
+          <span class="actions__divider" aria-hidden="true"></span>
+          <button id="select-all-shown" type="button">Select all visible</button>
+          <button id="deselect-all" type="button">Deselect all</button>
+          <span class="actions__divider" aria-hidden="true"></span>
+          <button id="delete-selected" class="danger" type="button">Delete selected</button>
+          <button id="delete-filtered" class="danger" type="button">Delete all filtered</button>
+          <span class="actions__divider" aria-hidden="true"></span>
+          <div class="actions__cutoff" id="cutoff-group">
+            <label class="toolbar__label" for="cutoff-year">Drop pre</label>
+            <select id="cutoff-year" class="toolbar__select"></select>
+            <button id="delete-pre-year" class="danger" type="button" disabled>
+              Drop pre-—
+            </button>
+          </div>
+          <span class="actions__divider" aria-hidden="true"></span>
+          <button id="undo" type="button" disabled>Undo last delete</button>
+          <span class="actions__divider actions__divider--push" aria-hidden="true"></span>
+          <button id="export" class="primary" type="button">Export bookmarks HTML</button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="bookmarks-table" class="bookmarks-table">
+            <thead>
+              <tr>
+                <th class="col-checkbox"><input type="checkbox" id="header-check" aria-label="Select all visible" /></th>
+                <th class="col-status">Status</th>
+                <th class="col-title">Title</th>
+                <th class="col-url">URL</th>
+                <th class="col-folder">Folder</th>
+                <th class="col-date">Added</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="bookmarks-tbody"></tbody>
+          </table>
+          <div id="empty-state" class="empty-state" hidden>
+            <h2>No bookmarks match</h2>
+            <p>Try clearing filters or your search.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/app/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="8" fill="#4A8B5C"/>
+  <text x="26" y="45" font-family="'Avenir Next', 'Avenir', 'Nunito Sans', system-ui, sans-serif" font-size="36" font-weight="700" fill="#FFFAF3">B</text>
+  <text x="46" y="45" font-family="'Avenir Next', 'Avenir', 'Nunito Sans', system-ui, sans-serif" font-size="36" font-weight="700" fill="#FFFAF3" opacity="0.6">.</text>
+</svg>

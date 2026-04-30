@@ -1,0 +1,22 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+
+# Cloudflare
+.dev.vars
+.wrangler/
+
+# Local-only working files (not part of the public app)
+reference-frontend*.html
+Branding/
+CLAUDE.md
+SPEC.md
+
+# Old Node backend — kept on disk until the Cloudflare port is verified
+server.js
+lib/
+
+# Claude Code user-local overrides
+.claude/settings.local.json

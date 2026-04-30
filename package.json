@@ -1,0 +1,16 @@
+{
+  "name": "bookmarks-cleanup",
+  "version": "0.1.0",
+  "description": "Personal bookmarks-cleanup web app — Cloudflare Pages + Pages Function.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
