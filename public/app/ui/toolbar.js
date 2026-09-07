@@ -6,6 +6,7 @@ import {
   STATUS_BUCKETS,
   getFolderOptions,
   isAnyFilterActive,
+  addDateMs,
 } from '../filters.js';
 
 const els = {
@@ -105,6 +106,21 @@ export function syncResetVisibility(filters) {
   const r = els.reset();
   if (!r) return;
   r.hidden = !isAnyFilterActive(filters);
+}
+
+/**
+ * Enable or disable the Age dropdown based on whether the current bookmark
+ * set has any parseable add_date. Dateless files (Safari exports, or any
+ * file where nothing carries add_date) would otherwise leave the control
+ * live but useless — the "No date" bucket matches everything and every
+ * other bucket matches nothing. Call on load and after every render so it
+ * tracks the currently-loaded file.
+ */
+export function syncAgeAvailability(bookmarks) {
+  const sel = els.age();
+  if (!sel) return;
+  const hasDates = bookmarks.some((b) => addDateMs(b.add_date) !== null);
+  sel.disabled = !hasDates;
 }
 
 function escapeAttr(s) {

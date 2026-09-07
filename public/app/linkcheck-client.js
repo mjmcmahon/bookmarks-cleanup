@@ -2,6 +2,21 @@
 // Calls onResult for each, onProgress (done, total) after each result.
 // Pass an AbortSignal to cancel.
 
+/**
+ * Reclassify a raw server result before it's applied to the store. The
+ * server has no concept of "skipped" — it reports non-http(s) schemes as
+ * status: 'error' with a reason it generates itself. We recognise that
+ * reason string here and relabel it client-side so feed://, javascript:,
+ * etc. land in their own bucket instead of drowning genuine transient
+ * errors (spec: SAFARI-SPEC.md section 5.5). Mutates and returns `result`.
+ */
+export function classifyResult(result) {
+  if (result && result.status === 'error' && /^Unsupported scheme/.test(result.reason || '')) {
+    result.status = 'skipped';
+  }
+  return result;
+}
+
 export async function checkLinks({ urls, onResult, onProgress, signal }) {
   const response = await fetch('/api/check-links', {
     method: 'POST',
@@ -40,6 +55,7 @@ export async function checkLinks({ urls, onResult, onProgress, signal }) {
     } catch {
       return; // skip malformed
     }
+    classifyResult(obj);
     onResult(obj);
     done++;
     if (onProgress) onProgress(done, urls.length);

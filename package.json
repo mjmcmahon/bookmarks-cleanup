@@ -5,9 +5,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev"
+    "dev": "wrangler pages dev",
+    "test": "node --test test/*.test.js"
   },
   "devDependencies": {
+    "jsdom": "^30.0.1",
     "wrangler": "^3.80.0"
   },
   "engines": {

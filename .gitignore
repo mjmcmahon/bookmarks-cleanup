@@ -18,5 +18,9 @@ SPEC.md
 server.js
 lib/
 
+# Real personal bookmark exports used as test fixtures — never committed to
+# this public repo. See SAFARI-SPEC.md section 2 for where they live locally.
+test/fixtures/
+
 # Claude Code user-local overrides
 .claude/settings.local.json

@@ -6,7 +6,7 @@
 //           means "directly in the section root" (e.g. "Bookmarks Bar|" → bookmarks
 //           with folder_path === ["Bookmarks Bar"]).
 //   age:    "" | "1y" | "3y" | "5y" | "5plus" | "10plus" | "nodate"
-//   status: "" | "alive" | "dead" | "error" | "unchecked"
+//   status: "" | "alive" | "dead" | "error" | "skipped" | "unchecked"
 
 export const AGE_BUCKETS = [
   { value: '', label: 'Any age' },
@@ -23,6 +23,7 @@ export const STATUS_BUCKETS = [
   { value: 'alive', label: 'Alive' },
   { value: 'dead', label: 'Dead' },
   { value: 'error', label: 'Error' },
+  { value: 'skipped', label: 'Skipped' },
   { value: 'unchecked', label: 'Unchecked' },
 ];
 

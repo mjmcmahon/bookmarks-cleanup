@@ -384,6 +384,10 @@ main#app {
   background: var(--highlight); /* Warm Amber */
 }
 
+.notes__dot--skipped {
+  background: var(--text-faint);
+}
+
 .parse-error {
   margin: 0;
   padding: 12px 16px;
@@ -550,6 +554,12 @@ main#app {
 
 .actions__cutoff .toolbar__label {
   margin-right: 2px;
+}
+
+.actions__dateless-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .actions__progress {
@@ -731,6 +741,11 @@ button.primary:hover:not(:disabled) {
 .status-badge--error {
   background: rgba(196, 135, 46, 0.16); /* warm amber soft */
   color: #8a6320;
+}
+
+.status-badge--skipped {
+  background: var(--border);
+  color: var(--text-muted);
 }
 
 .col-title {

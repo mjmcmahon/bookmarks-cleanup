@@ -59,6 +59,10 @@
             <p class="notes__footnote">
               Edits live in this tab until you export. A refresh wipes them.
             </p>
+            <p class="notes__footnote">
+              Safari exports carry no dates, so for those files the cleanup
+              path is link-check plus manual review, not age filtering.
+            </p>
           </div>
 
           <div class="notes__col">
@@ -81,6 +85,10 @@
                 <span class="notes__dot notes__dot--error" aria-hidden="true"></span>
                 <span><strong>Error</strong> — timeouts or SSL oddities. Flagged in yellow, never bulk-deleted — you review these manually.</span>
               </li>
+              <li>
+                <span class="notes__dot notes__dot--skipped" aria-hidden="true"></span>
+                <span><strong>Skipped</strong> — links with a scheme the check can't probe (feed://, javascript:, etc.). Never bulk-deleted; review manually.</span>
+              </li>
             </ul>
           </div>
         </article>
@@ -100,6 +108,10 @@
             <li>
               <strong>DuckDuckGo:</strong>
               Settings → Sync &amp; Backup → Export bookmarks
+            </li>
+            <li>
+              <strong>Safari:</strong>
+              File → Export Browsing Data to File
             </li>
           </ul>
         </details>
@@ -130,6 +142,14 @@
               Settings → Bookmarks → delete folders or bookmarks individually
               (no select-all).
             </li>
+            <li>
+              <strong>Safari:</strong>
+              Bookmarks sidebar (Cmd + Option + B) → select all bookmarks in
+              each folder → Delete, then re-import via File → Import
+              Browsing Data from File or Folder. Safari's import merges into
+              the existing Favorites bar rather than replacing it, so
+              anything left in place will be duplicated.
+            </li>
           </ul>
           <p class="export-help__footnote">
             Then re-import the cleaned HTML via the same Import menu in your
@@ -149,7 +169,8 @@
             <p class="drop-zone__secondary">or click to choose a file</p>
             <p class="drop-zone__supported">
               Works with exports from Chrome, Firefox, Edge, Brave, Opera,
-              Vivaldi, Arc, and DuckDuckGo. Safari support coming later.
+              Vivaldi, Arc, DuckDuckGo, and Safari (File &gt; Export
+              Browsing Data to File).
             </p>
           </div>
           <input type="file" id="file-input" accept=".html,.htm,text/html" hidden />
@@ -227,6 +248,10 @@
               Drop pre-—
             </button>
           </div>
+          <p id="cutoff-dateless-note" class="actions__dateless-note" hidden>
+            Safari doesn't export dates, so age filtering and the year cutoff
+            aren't available for this file. Use link-check and search instead.
+          </p>
           <span class="actions__divider" aria-hidden="true"></span>
           <button id="undo" type="button" disabled>Undo last delete</button>
           <span class="actions__divider actions__divider--push" aria-hidden="true"></span>

@@ -12,6 +12,7 @@ import {
   initToolbar,
   populateFolderOptions,
   syncResetVisibility,
+  syncAgeAvailability,
 } from './ui/toolbar.js';
 import { renderStats } from './ui/stats.js';
 import { showToast } from './ui/toast.js';
@@ -34,6 +35,7 @@ const els = {
   undo: () => document.getElementById('undo'),
   exportBtn: () => document.getElementById('export'),
   cutoffGroup: () => document.getElementById('cutoff-group'),
+  cutoffDatelessNote: () => document.getElementById('cutoff-dateless-note'),
   cutoffYear: () => document.getElementById('cutoff-year'),
   deletePreYear: () => document.getElementById('delete-pre-year'),
   checkLinksBtn: () => document.getElementById('check-links'),
@@ -112,24 +114,24 @@ async function loadFile(file) {
     return;
   }
 
-  let parsed;
+  let bookmarks, source;
   try {
-    parsed = parseBookmarks(text);
+    ({ bookmarks, source } = parseBookmarks(text));
   } catch (err) {
     showError(err?.message || String(err));
     return;
   }
 
-  if (parsed.length === 0) {
+  if (bookmarks.length === 0) {
     showError(
       "Parsed the file, but found 0 bookmarks. Is this really a browser bookmarks export?"
     );
     return;
   }
 
-  store.loadBookmarks(parsed);
+  store.loadBookmarks(bookmarks, source);
   showTable();
-  showToast(`Loaded ${parsed.length.toLocaleString()} bookmarks`);
+  showToast(`Loaded ${bookmarks.length.toLocaleString()} bookmarks`);
 }
 
 function showTable() {
@@ -224,7 +226,7 @@ function wireActions() {
       showToast('Nothing to export');
       return;
     }
-    downloadExport(list);
+    downloadExport(list, store.getSource());
     showToast(
       `Exported ${list.length.toLocaleString()} bookmarks. ` +
         `Clear existing bookmarks before re-import to avoid duplicates.`
@@ -257,8 +259,11 @@ function wireActions() {
 async function startLinkCheck() {
   if (activeCheck) return; // already running
   const list = store.getBookmarks();
-  // Only probe http(s) URLs — skip data:, javascript:, file:, etc.
-  const targets = list.filter((b) => /^https?:\/\//i.test(b.url || ''));
+  // Send every bookmark with a URL through the check. The server already
+  // classifies non-http(s) schemes (feed:, javascript:, etc.) as a fast,
+  // no-network 'error' with an "Unsupported scheme" reason, which the
+  // client reclassifies to 'skipped' — see linkcheck-client.classifyResult.
+  const targets = list.filter((b) => Boolean(b.url));
   if (targets.length === 0) {
     showToast('No checkable URLs');
     return;
@@ -285,7 +290,8 @@ async function startLinkCheck() {
       `Checked ${targets.length.toLocaleString()} — ` +
         `${store.countByStatus('alive').toLocaleString()} alive, ` +
         `${store.countByStatus('dead').toLocaleString()} dead, ` +
-        `${store.countByStatus('error').toLocaleString()} error`
+        `${store.countByStatus('error').toLocaleString()} error, ` +
+        `${store.countByStatus('skipped').toLocaleString()} skipped`
     );
   } catch (err) {
     showToast(linkCheckErrorMessage(err));
@@ -350,6 +356,7 @@ function labelFor(status) {
   if (status === 'alive') return 'Alive';
   if (status === 'dead') return 'Dead';
   if (status === 'error') return 'Error';
+  if (status === 'skipped') return 'Skipped';
   return 'Unchecked';
 }
 
@@ -384,7 +391,8 @@ function setCheckUI(state, progress) {
     const hasResults =
       store.countByStatus('alive') +
         store.countByStatus('dead') +
-        store.countByStatus('error') >
+        store.countByStatus('error') +
+        store.countByStatus('skipped') >
       0;
     checkBtn.textContent = hasResults ? 'Re-check' : 'Check links';
   }
@@ -408,11 +416,14 @@ function bookmarksBeforeYear(year) {
 
 /**
  * Refresh the year `<select>` options from the current bookmark set. Hides
- * the entire cutoff group if no bookmark has a parseable date.
+ * the entire cutoff group if no bookmark has a parseable date (Safari files,
+ * or any other file where nothing carries add_date) and shows a one-line
+ * explanation in its place instead of just vanishing.
  */
 function populateYearSelect() {
   const sel = els.cutoffYear();
   const group = els.cutoffGroup();
+  const note = els.cutoffDatelessNote();
   if (!sel || !group) return;
 
   const previous = sel.value;
@@ -425,9 +436,11 @@ function populateYearSelect() {
   if (years.size === 0) {
     group.hidden = true;
     sel.innerHTML = '';
+    if (note) note.hidden = false;
     return;
   }
   group.hidden = false;
+  if (note) note.hidden = true;
 
   const sorted = Array.from(years).sort((a, b) => a - b);
   const min = sorted[0];
@@ -499,6 +512,7 @@ function render() {
   const visible = applyFilters(bookmarks, filters);
 
   populateFolderOptions(bookmarks);
+  syncAgeAvailability(bookmarks);
   populateYearSelect();
   rewireCutoffButton();
 

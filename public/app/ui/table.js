@@ -157,7 +157,7 @@ function buildStatusBadge(status, reason) {
   }
   const span = document.createElement('span');
   span.className = `status-badge status-badge--${status}`;
-  span.textContent = status === 'dead' ? 'Dead' : 'Error';
+  span.textContent = status === 'dead' ? 'Dead' : status === 'skipped' ? 'Skipped' : 'Error';
   if (reason) span.title = reason;
   return span;
 }

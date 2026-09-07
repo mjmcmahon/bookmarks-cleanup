@@ -10,6 +10,7 @@ const UNDO_CAP = 20;
 
 let bookmarks = [];
 let originalCount = 0;
+let source = 'netscape';
 let filters = emptyFilters();
 /** @type {Set<number>} */
 let selected = new Set();
@@ -37,6 +38,9 @@ export function getBookmarks() {
 export function getOriginalCount() {
   return originalCount;
 }
+export function getSource() {
+  return source;
+}
 export function getFilters() {
   return filters;
 }
@@ -52,10 +56,13 @@ export function lastUndoSize() {
 
 /**
  * Replace the entire bookmark set (file load). Resets selection and undo.
+ * @param {Array<Object>} list
+ * @param {'safari' | 'netscape'} [loadedSource] defaults to 'netscape' if omitted.
  */
-export function loadBookmarks(list) {
+export function loadBookmarks(list, loadedSource) {
   bookmarks = list;
   originalCount = list.length;
+  source = loadedSource || 'netscape';
   filters = emptyFilters();
   selected = new Set();
   undoStack = [];
