@@ -17,6 +17,15 @@
 // Export profile per detected source: which folder is the toolbar, and the
 // root-folder sort order (named roots first in listed order, everything
 // else alphabetical after).
+//
+// Cross-browser export: downloadExport takes an explicit `format` ('auto' |
+// 'safari' | 'netscape') so a file loaded from one browser can be exported
+// for another. When the chosen target profile differs from the detected
+// source profile, buildExportHtml renames the toolbar root's top-level
+// folder-path segment to match the target's toolbar name before the tree is
+// built (SAFARI-SPEC.md section 5.2 addendum). 'auto' always uses the
+// source profile as the target too, so no rename ever triggers and output
+// is byte-identical to before this feature existed.
 
 export const PROFILES = {
   netscape: { toolbar: 'Bookmarks Bar',
@@ -28,17 +37,34 @@ export const PROFILES = {
 /**
  * Build the export HTML string from a bookmark list.
  * @param {Array<Object>} bookmarks
- * @param {{toolbar: string, order: string[]}} [profile] - export profile
- *   (see PROFILES); defaults to the netscape profile.
+ * @param {{toolbar: string, order: string[]}} [profile] - target export
+ *   profile (see PROFILES); defaults to the netscape profile.
+ * @param {{toolbar: string, order: string[]}} [sourceProfile] - the profile
+ *   the bookmarks were loaded from; defaults to `profile` itself, which
+ *   means no toolbar-root renaming ever happens (byte-identical output to
+ *   before this parameter existed — this is what every 2-arg caller and
+ *   Auto rely on).
  * @returns {string}
  */
-export function buildExportHtml(bookmarks, profile = PROFILES.netscape) {
+export function buildExportHtml(bookmarks, profile = PROFILES.netscape, sourceProfile = profile) {
   const root = makeNode('__root__');
 
   for (const b of bookmarks) {
     const fp = b.folder_path || [];
+    // Cross-browser export: rename the toolbar root to match the target
+    // profile's name (Safari matches its toolbar folder by name alone — see
+    // SAFARI-SPEC.md section 4). Only the top-level segment is remapped;
+    // everything else in the tree passes through unchanged. When
+    // sourceProfile === profile (the default, and what Auto always uses),
+    // this is always false, so behavior is unchanged.
+    const remapRoot =
+      fp.length > 0 &&
+      fp[0] === sourceProfile.toolbar &&
+      sourceProfile.toolbar !== profile.toolbar;
+    const effectiveFp = remapRoot ? [profile.toolbar, ...fp.slice(1)] : fp;
+
     let node = root;
-    for (const part of fp) {
+    for (const part of effectiveFp) {
       if (!node.folders[part]) node.folders[part] = makeNode(part);
       node = node.folders[part];
     }
@@ -70,24 +96,39 @@ export function buildExportHtml(bookmarks, profile = PROFILES.netscape) {
 }
 
 /**
- * Reconstruct + download. Profile is resolved from the detected source
- * ('safari' gets the Safari profile; anything else, including undefined,
- * gets the netscape profile so existing callers/behavior are unaffected).
- * Filename: bookmarks-cleaned-YYYY-MM-DD.html, or
- * bookmarks-cleaned-safari-YYYY-MM-DD.html for the Safari profile so the two
- * don't collide in Downloads.
+ * Reconstruct + download. Source profile is resolved from the detected
+ * source ('safari' gets the Safari profile; anything else, including
+ * undefined, gets the netscape profile). Target (output) profile is
+ * resolved from `format`: 'safari' or 'netscape' picks that profile
+ * explicitly; 'auto' (or anything unrecognised, including the omitted
+ * default) falls back to the detected source's profile — i.e. today's
+ * same-browser round-trip behavior, unchanged.
+ *
+ * When source and target profiles differ, the toolbar root is renamed to
+ * match the target (see buildExportHtml) — this is the cross-browser export
+ * case (SAFARI-SPEC.md section 5.2 addendum).
+ *
+ * Filename reflects the CHOSEN target profile, not the detected source:
+ * bookmarks-cleaned-YYYY-MM-DD.html, or
+ * bookmarks-cleaned-safari-YYYY-MM-DD.html for the Safari profile, so the
+ * two don't collide in Downloads.
  * @param {Array<Object>} bookmarks
  * @param {string} [source] - 'safari' or 'netscape'
+ * @param {string} [format] - 'auto' | 'safari' | 'netscape'; defaults to 'auto'
  */
-export function downloadExport(bookmarks, source) {
-  const profile = source === 'safari' ? PROFILES.safari : PROFILES.netscape;
-  const html = buildExportHtml(bookmarks, profile);
+export function downloadExport(bookmarks, source, format = 'auto') {
+  const sourceKey = source === 'safari' ? 'safari' : 'netscape';
+  const targetKey = format === 'safari' || format === 'netscape' ? format : sourceKey;
+  const sourceProfile = PROFILES[sourceKey];
+  const targetProfile = PROFILES[targetKey];
+
+  const html = buildExportHtml(bookmarks, targetProfile, sourceProfile);
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   const stamp = new Date().toISOString().slice(0, 10);
-  const tag = profile === PROFILES.safari ? 'safari-' : '';
+  const tag = targetKey === 'safari' ? 'safari-' : '';
   a.download = `bookmarks-cleaned-${tag}${stamp}.html`;
   document.body.appendChild(a);
   a.click();

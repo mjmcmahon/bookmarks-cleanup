@@ -556,6 +556,21 @@ main#app {
   margin-right: 2px;
 }
 
+.actions__export-format {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions__export-format .toolbar__select {
+  height: 32px;
+  padding: 4px 28px 4px 8px;
+}
+
+.actions__export-format .toolbar__label {
+  margin-right: 2px;
+}
+
 .actions__dateless-note {
   margin: 0;
   color: var(--text-muted);

@@ -34,6 +34,7 @@ const els = {
   deleteFiltered: () => document.getElementById('delete-filtered'),
   undo: () => document.getElementById('undo'),
   exportBtn: () => document.getElementById('export'),
+  exportFormat: () => document.getElementById('export-format'),
   cutoffGroup: () => document.getElementById('cutoff-group'),
   cutoffDatelessNote: () => document.getElementById('cutoff-dateless-note'),
   cutoffYear: () => document.getElementById('cutoff-year'),
@@ -130,6 +131,8 @@ async function loadFile(file) {
   }
 
   store.loadBookmarks(bookmarks, source);
+  const fmt = els.exportFormat();
+  if (fmt) fmt.value = 'auto';
   showTable();
   showToast(`Loaded ${bookmarks.length.toLocaleString()} bookmarks`);
 }
@@ -226,7 +229,8 @@ function wireActions() {
       showToast('Nothing to export');
       return;
     }
-    downloadExport(list, store.getSource());
+    const format = els.exportFormat()?.value || 'auto';
+    downloadExport(list, store.getSource(), format);
     showToast(
       `Exported ${list.length.toLocaleString()} bookmarks. ` +
         `Clear existing bookmarks before re-import to avoid duplicates.`

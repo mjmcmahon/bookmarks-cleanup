@@ -205,6 +205,17 @@ No export-format picker. Task 0 confirmed name-matching works, so the detected-s
 
 Because Safari ignores `PERSONAL_TOOLBAR_FOLDER`, emitting it on `Favorites` is harmless but pointless — what matters is that the root folder is named exactly `Favorites`. Keep emitting the attribute anyway: it costs nothing and makes the same file import correctly into Chromium browsers, which do honour it.
 
+#### Addendum, 7 September 2026 — cross-browser export, approved new scope
+
+The "no picker" call above was correct for the job it was scoped to: Safari-in, Safari-out, with the profile chosen automatically from the detected source. It was never an argument against a picker in general — it just meant a same-browser round-trip doesn't need one.
+
+New, separately-approved scope: let a Chrome (or other Netscape-profile) export be cleaned here and imported into Safari, and vice versa. That's a genuine cross-browser migration job, not the round-trip case, so it needs an explicit choice of *output* format independent of the detected input format.
+
+- Add a select beside the Export button: **Auto (detected source)** — the default, behaves exactly as before — **Chrome and other browsers**, **Safari**.
+- The real work is renaming the toolbar root, not just moving the `PERSONAL_TOOLBAR_FOLDER` attribute. Safari matches its toolbar folder by name alone (section 4), so exporting with the Safari profile must rename whatever the toolbar root was called on the way in to `Favorites`; exporting with the Netscape profile must rename it to `Bookmarks Bar`. Auto must still produce byte-identical output to today — it's the same profile in and out, so no rename ever triggers.
+- Filename reflects the chosen output profile, not just the detected source.
+- Explicitly out of scope: mapping Safari's `Bookmarks Menu` to Chrome's `Other Bookmarks`, or any other folder renaming. Toolbar root only — the rest of the tree passes through unchanged, same as always.
+
 ### 5.3 Dateless files — say so, don't just hide the control
 
 `public/app/main.js` `populateYearSelect()` already hides the whole cutoff group when nothing has a parseable date, so decision 3.1 is **already implemented** and needs no logic change. The problem is that it vanishes with no explanation — the user sees a control on Chrome files and no control on Safari files, and concludes the page is broken.
